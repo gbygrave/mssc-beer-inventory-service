@@ -37,6 +37,19 @@ public class AllocationServiceImpl implements AllocationService {
         return totalOrdered.get() == totalAllocated.get();
     }
 
+    @Override
+    public BeerOrderDto deallocateOrder(BeerOrderDto beerOrderDto) {
+        log.debug("Deallocating OrderId: " + beerOrderDto.getId());
+
+        beerOrderDto.getBeerOrderLines().forEach(beerOrderLineDto -> {
+            if (get(beerOrderLineDto.getQuantityAllocated()) > 0) {
+                deallocateBeerOrderLine(beerOrderLineDto);
+            }
+        });
+
+        return beerOrderDto;
+    }
+
     private void allocateBeerOrderLine(BeerOrderLineDto beerOrderLineDto) {
         List<BeerInventory> beerInventoryList = beerInventoryRepository.findAllByUpc(beerOrderLineDto.getUpc());
 
@@ -59,8 +72,21 @@ public class AllocationServiceImpl implements AllocationService {
         });
     }
 
+    private void deallocateBeerOrderLine(BeerOrderLineDto beerOrderLineDto) {
+        BeerInventory beerInventory = BeerInventory.builder()
+                .beerId(beerOrderLineDto.getBeerId())
+                .quantityOnHand(beerOrderLineDto.getQuantityAllocated())
+                .upc(beerOrderLineDto.getUpc())
+                .version(Long.valueOf(beerOrderLineDto.getVersion())) // <- This?
+                .build();
+        beerOrderLineDto.setQuantityAllocated(0);
+        beerInventoryRepository.save(beerInventory);
+        log.debug("Saved inventory for beer upc: " + beerInventory.getUpc() + " inventory id: " + beerInventory.getId());
+    }
+
     /**
      * Squash null to zero.
+     *
      * @param qty
      * @return
      */
