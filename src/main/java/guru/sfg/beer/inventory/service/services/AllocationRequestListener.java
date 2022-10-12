@@ -34,7 +34,7 @@ public class AllocationRequestListener {
 
         AllocateOrderResponse allocateOrderResponse = new AllocateOrderResponse(beerOrderDto,
                                                                                 allocationError,
-                                                                                fullyAllocated);
+                                                                                !fullyAllocated);
         jmsTemplate.convertAndSend(ALLOCATE_ORDER_RESPONSE_QUEUE, allocateOrderResponse);
     }
 }
